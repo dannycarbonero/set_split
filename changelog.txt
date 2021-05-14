@@ -1,0 +1,5 @@
+v01: Initial Commit
+
+TODO:
+    - REGEX for tracklist handling
+    - modernize front end
