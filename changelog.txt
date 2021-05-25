@@ -7,6 +7,7 @@ v01.1:
 
         .format_tracklist:
             - comments added for clarity
+            - filtering exception added for lines found in tracklists with "Artist on stage"
 
 TODO:
     - REGEX for tracklist handling
