@@ -38,12 +38,14 @@ class set_split_backend(QtWidgets.QMainWindow,layout.Ui_Dialog):
         album_artist = self.album_artist_input.toPlainText()
         album = self.album_input.toPlainText()
 
+        offset = int(self.offset_input.toPlainText())
+
         tracklist_path = output_path+'tracklist.txt'
 
         with open(tracklist_path,'wb') as file:
             file.write(self.tracklist_input.toPlainText().encode('utf-8'))
 
-        [timings, titles, artists] = format_tracklist(tracklist_path)
+        [timings, titles, artists] = format_tracklist(tracklist_path, offset)
 
         remove(tracklist_path)
 
@@ -54,6 +56,7 @@ class set_split_backend(QtWidgets.QMainWindow,layout.Ui_Dialog):
         self.worker.moveToThread(self.thread)
         self.thread.started.connect(self.worker.run)
         self.worker.update.connect(self.update_output)
+        self.worker.terminate_signal.connect(self.terminate_thread)
         self.thread.start()
 
 
@@ -64,9 +67,17 @@ class set_split_backend(QtWidgets.QMainWindow,layout.Ui_Dialog):
 
 
 
+    def terminate_thread(self, terminate_signal):
+
+        if terminate_signal == 1:
+            self.thread.quit()
+
+
+
 class Worker(QtCore.QObject):
 
     update = QtCore.pyqtSignal(str)
+    terminate_signal = QtCore.pyqtSignal(bool)
 
     def __init__(self, set_path, bitrate, output_path, album_artist, album, timings, titles, artists, genre, parent=None):
         super(Worker,self).__init__()
@@ -81,9 +92,10 @@ class Worker(QtCore.QObject):
         self.genre = genre
 
 
+
     def run(self):
 
-        self.update.emit('Loading Audio.')
+        self.update.emit('Loading Audio...')
         set = pydub.AudioSegment.from_mp3(self.set_path)
         self.update.emit('Successfully Loaded Audio')
 
@@ -105,9 +117,12 @@ class Worker(QtCore.QObject):
                               tags={'title': self.titles[i], 'artist': self.artists[i], 'album': self.album,
                                     'album artist': self.album_artist, 'track': i + 1, 'genre': self.genre})
 
+        self.update.emit('Finished Splitting Set')
+        self.terminate_signal.emit(1)
 
 
-def format_tracklist(directory): # function to format tracklist for tags
+
+def format_tracklist(directory, offset): # function to format tracklist for tags
 
     text = []
     with open(directory) as file:
@@ -124,24 +139,25 @@ def format_tracklist(directory): # function to format tracklist for tags
     artist_string = []
 
     for i in range(len(text)):
+
         line = text[i]
 
-        if line[0] == '[':
+        if line[0] == '[': # check for line starting with timestamp
 
             timings.append(line[1:line.find(']')])  # grab song timing from inside brackets
-
             line = line[line.find(']') + 1:] # remove timestamp before first closing bracket
 
             if len(title_string) > 128:
                 title_string = title_string[0:128]
 
+            # append previously formatted tag before writing new one, used to have full string, if multiple songs or artists are in same line
             titles.append(title_string)
             title_string = remove_edge_spaces(line[line.find(' - ') + 2:line.find('[')])
 
             artists.append(artist_string)
             artist_string = remove_edge_spaces(line[0:line.rfind(' - ')])
 
-        else:
+        elif "on stage" not in str.lower(line): # add filter for pasted lines that only have artists as "on stage"
 
             line = line[3:line.find('[')]
             title_string = title_string + ' & ' + remove_edge_spaces(str(line[line.find(' - ') + 2:]))
@@ -151,10 +167,13 @@ def format_tracklist(directory): # function to format tracklist for tags
     titles.append(title_string)
     artists.append(artist_string)
 
+    # first entries are empty, remove them
     del titles[0]
     del artists[0]
 
     timings = timings_to_ms(timings)
+    timings = [timing + offset for timing in timings]
+    timings[0] = 0
 
     return timings, titles, artists
 

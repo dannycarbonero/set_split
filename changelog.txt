@@ -1,5 +1,13 @@
 v01: Initial Commit
 
+v01.1:
+    set_split.py:
+        - modified back end to terminate working thread at end of splitting process to allow for re-runs with new fields
+        - functionality for offsetting timings according to GUI input implemented
+
+        .format_tracklist:
+            - comments added for clarity
+
 TODO:
     - REGEX for tracklist handling
     - modernize front end
