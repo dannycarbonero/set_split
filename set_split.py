@@ -4,7 +4,12 @@
 from PyQt5 import QtCore, QtGui, QtWidgets
 import layout
 from os import mkdir,remove
+import re
 import pydub
+
+from selenium import webdriver
+from selenium.webdriver.common.by import By
+import time
 
 
 
@@ -14,26 +19,41 @@ class set_split_backend(QtWidgets.QMainWindow,layout.Ui_Dialog):
         super(self.__class__, self).__init__()
         self.setupUi(self)
         self.get_file.clicked.connect(self.set_directories)
+        self.tracklist_update.clicked.connect(self.get_tracklist)
         self.run.clicked.connect(self.split_set)
 
 
 
     def set_directories(self):
 
-        path_string, _ = QtWidgets.QFileDialog.getOpenFileName()
-        parent_path = path_string[0:path_string.rfind('/')+1]
-        self.file_path.setText(path_string)
-        self.output_dir.setText(parent_path)
+        self.path_string, _ = QtWidgets.QFileDialog.getOpenFileName()
+        self.parent_path = self.path_string[0:self.path_string.rfind('/')+1]
+        file_string = self.path_string[[m.start() for m in re.finditer('/', self.path_string)][-1]+1:]
+        self.file_path.setText(file_string)
+        self.output_dir.setText(self.parent_path)
+
+
+
+    def get_tracklist(self):
+
+        self.update_thread = QtCore.QThread()
+        self.updater = updater(self.tracklist_link.toPlainText())
+        self.updater.moveToThread(self.update_thread)
+        self.update_thread.started.connect(self.updater.update_tracklist)
+        self.updater.text.connect(self.update_tracklist)
+        self.updater.updating_dialog.connect(self.update_output)
+        self.updater.terminate_signal.connect(self.terminate_updating_thread)
+        self.update_thread.start()
 
 
 
     def split_set(self):
 
-        set_path = self.file_path.toPlainText()
+        set_path = self.path_string
 
         bitrate = pydub.utils.mediainfo(set_path)['bit_rate']
 
-        output_path = self.output_dir.toPlainText()
+        output_path = self.parent_path
 
         album_artist = self.album_artist_input.toPlainText()
         album = self.album_input.toPlainText()
@@ -43,7 +63,7 @@ class set_split_backend(QtWidgets.QMainWindow,layout.Ui_Dialog):
         tracklist_path = output_path+'tracklist.txt'
 
         with open(tracklist_path,'wb') as file:
-            file.write(self.tracklist_input.toPlainText().encode('utf-8'))
+            file.write(self.tracklist_disp.toPlainText().encode('utf-8'))
 
         [timings, titles, artists] = format_tracklist(tracklist_path, offset)
 
@@ -51,13 +71,13 @@ class set_split_backend(QtWidgets.QMainWindow,layout.Ui_Dialog):
 
         genre = self.genre_input.toPlainText()
 
-        self.thread = QtCore.QThread()
-        self.worker = Worker(set_path, bitrate, output_path, album_artist, album, timings, titles, artists, genre)
-        self.worker.moveToThread(self.thread)
-        self.thread.started.connect(self.worker.run)
+        self.main_thread = QtCore.QThread()
+        self.worker = Main(set_path, bitrate, output_path, album_artist, album, timings, titles, artists, genre)
+        self.worker.moveToThread(self.main_thread)
+        self.main_thread.started.connect(self.worker.run)
         self.worker.update.connect(self.update_output)
-        self.worker.terminate_signal.connect(self.terminate_thread)
-        self.thread.start()
+        self.worker.terminate_signal.connect(self.terminate_main_thread)
+        self.main_thread.start()
 
 
 
@@ -67,20 +87,36 @@ class set_split_backend(QtWidgets.QMainWindow,layout.Ui_Dialog):
 
 
 
-    def terminate_thread(self, terminate_signal):
+    def terminate_main_thread(self, terminate_signal):
 
         if terminate_signal == 1:
-            self.thread.quit()
+            self.main_thread.quit()
 
 
 
-class Worker(QtCore.QObject):
+    def update_tracklist(self, text):
+
+        self.tracklist_disp.setText(text)
+
+
+
+    def terminate_updating_thread(self, terminate_signal):
+
+        if terminate_signal == 1:
+            self.update_thread.quit()
+
+
+
+class Main(QtCore.QObject):
 
     update = QtCore.pyqtSignal(str)
     terminate_signal = QtCore.pyqtSignal(bool)
 
+
+
     def __init__(self, set_path, bitrate, output_path, album_artist, album, timings, titles, artists, genre, parent=None):
-        super(Worker,self).__init__()
+
+        super(Main,self).__init__()
         self.set_path = set_path
         self.bitrate = bitrate
         self.output_path = output_path
@@ -118,6 +154,42 @@ class Worker(QtCore.QObject):
                                     'album artist': self.album_artist, 'track': i + 1, 'genre': self.genre})
 
         self.update.emit('Finished Splitting Set')
+        self.terminate_signal.emit(1)
+
+
+
+class updater(QtCore.QObject):
+
+    text = QtCore.pyqtSignal(str)
+    updating_dialog = QtCore.pyqtSignal(str)
+    terminate_signal = QtCore.pyqtSignal(bool)
+
+    def __init__(self, link):
+
+        super(updater,self).__init__()
+        self.link = link
+
+    def update_tracklist(self):
+
+        self.updating_dialog.emit('Getting Tracklist')
+        email_1001 = 'dcarbonator@gmail.com'
+        password_1001 = 'musicislife'
+        driver = webdriver.Firefox()
+        driver.set_window_size(1080, 1920)
+        driver.get(self.link)
+        driver.find_element(By.CSS_SELECTOR, ".fa-sign-in").click()
+        driver.find_element_by_name('email').send_keys(email_1001)
+        driver.find_element_by_name('password').send_keys(password_1001)
+        driver.find_element_by_name('login').click()
+        time.sleep(2.5)
+        driver.find_element_by_css_selector("[title*='export tracklist']").click()
+        time.sleep(2.5)
+        text_list = driver.find_element(By.ID, 'msgBoxTxt').text
+        driver.find_element_by_name('btn_msgpane_ok').click()
+        driver.quit()
+
+        self.text.emit(text_list)
+        self.updating_dialog.emit('Tracklist Aquired')
         self.terminate_signal.emit(1)
 
 

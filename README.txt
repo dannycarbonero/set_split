@@ -1,2 +1,2 @@
-Python interface to split music sets into individual tracks using pasted tracklist
- - tracklist must be exported using 1001 tracklist's "export tracklist" feature
+Python interface to split music sets into individual tracks using tracklist link from 1001 tracklists
+    - geckodriver must be installed and added to path

@@ -9,6 +9,28 @@ v01.1:
             - comments added for clarity
             - filtering exception added for lines found in tracklists with "Artist on stage"
 
+v02:
+    - handling of tracklists overhauled
+        - copy and pasting of exported tracklist from 1001 tracklists no longer required, just website link
+    - UI streamlined to handle overhaul
+    - new yml exported
+    - README updated
+
+    set_split.py:
+        - functionality for tracklist importing from 1001 tracklists link added
+            - uses similar threading protocol as previously implemented in main method
+        - variable renaming
+        - spacing made uniform
+
+   layout.py:
+        - elements added to handle new tracklist importing functionality
+        - layout modified to be better suited to new tracklisting functionality
+        - visual elements grouped in code in initialization
+        - spacing made uniform
+
+   .gitignore:
+        - update to ignore geckodriver logs
+
 TODO:
     - REGEX for tracklist handling
     - modernize front end

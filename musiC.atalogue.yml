@@ -1,4 +1,4 @@
-name: musiC.atalogue
+name: musiC.a
 channels:
   - defaults
 dependencies:
@@ -19,3 +19,7 @@ dependencies:
     - pyqt5==5.15.4
     - pyqt5-qt5==5.15.2
     - pyqt5-sip==12.8.1
+    - selenium==3.141.0
+    - urllib3==1.26.6
+    - youtube-dl==2021.6.6
+prefix: C:\Users\C\Anaconda3\envs\musiC.a
