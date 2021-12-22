@@ -216,24 +216,33 @@ def format_tracklist(directory, offset): # function to format tracklist for tags
 
         if line[0] == '[': # check for line starting with timestamp
 
-            timings.append(line[1:line.find(']')])  # grab song timing from inside brackets
-            line = line[line.find(']') + 1:] # remove timestamp before first closing bracket
+            if line [1] != '?': # check for missing timing tag
 
-            if len(title_string) > 128:
-                title_string = title_string[0:128]
+                timings.append(line[1:line.find(']')])  # grab song timing from inside brackets
+                line = line[line.find(']') + 1:] # remove timestamp before first closing bracket
 
-            # append previously formatted tag before writing new one, used to have full string, if multiple songs or artists are in same line
-            titles.append(title_string)
-            title_string = remove_edge_spaces(line[line.find(' - ') + 2:line.find('[')])
+                if len(title_string) > 128:
+                    title_string = title_string[0:128]
 
-            artists.append(artist_string)
-            artist_string = remove_edge_spaces(line[0:line.rfind(' - ')])
+                # append previously formatted tag before writing new one, used to have full string, if multiple songs or artists are in same line
+                titles.append(title_string)
+
+                title_string = remove_track_label(line)
+                artists.append(artist_string)
+                artist_string = remove_edge_spaces(line[0:line.rfind(' - ')])
+
+            else:
+                line = line[line.find(']') + 1:] # remove faulty timestamp before first closing bracket
+                line = remove_track_label(line)
+                title_string = title_string + ' & ' + remove_edge_spaces(str(line[line.find(' - ') + 2:]))
+                artist_string = artist_string + '; ' + remove_edge_spaces(str(line[0:line.find(' - ')]))
 
         elif "on stage" not in str.lower(line): # add filter for pasted lines that only have artists as "on stage"
 
-            line = line[3:line.find('[')]
+            line = remove_track_label(line)
             title_string = title_string + ' & ' + remove_edge_spaces(str(line[line.find(' - ') + 2:]))
             artist_string = artist_string + '; ' + remove_edge_spaces(str(line[0:line.find(' - ')]))
+
 
 
     titles.append(title_string)
@@ -243,7 +252,7 @@ def format_tracklist(directory, offset): # function to format tracklist for tags
     del titles[0]
     del artists[0]
 
-    timings = timings_to_ms(timings)
+    timings = format_timings(timings)
     timings = [timing + offset for timing in timings]
     timings[0] = 0
 
@@ -251,7 +260,7 @@ def format_tracklist(directory, offset): # function to format tracklist for tags
 
 
 
-def timings_to_ms(timings):
+def format_timings(timings):
 
     seconds_timings = []
     for i in range(len(timings)):
@@ -278,6 +287,17 @@ def remove_edge_spaces(string):
         string = string[1:]
     if string[-1] == ' ':
         string = string[:-1]
+    return string
+
+
+
+def remove_track_label(string):
+
+    if string.find('Mashup)') != -1:
+        string = remove_edge_spaces(string[string.find(' - ') + 2:string.find('Mashup)') + 7])
+    else:
+        title_string = remove_edge_spaces(string[string.find(' - ') + 2:string.find('[')])
+
     return string
 
 
