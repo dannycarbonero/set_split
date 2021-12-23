@@ -31,6 +31,27 @@ v02:
    .gitignore:
         - update to ignore geckodriver logs
 
+v02.1: 
+    musiC.atalogue.yml:
+        - update yml file to be compatible across all operating systems
+
+    set_split.py:
+        - change tracklist handling to successfully remove label name in edge case of mashup
+        - missing timing tags will now be appended to previous track rather than crashing the process
+
+v03:
+    set_split.py:
+        - mp3 file handling changed from pydub to ffmpeg allowing for splitting of larger files (FFMPEG MUST BE IN PATH FOR PROGRAM TO WORK)
+        - deprecated functions labeled as such, all pydub handling removed
+        - importing changed to more intuitive order
+
+    musiC.atalogue.yml:
+        - updated dependencies to reflect new back end 2handling
+
+    layout.py:
+        - offsetting will be converted to seconds, changed to reflect as such in interface
+        - added window title
+
 TODO:
     - REGEX for tracklist handling
     - modernize front end

@@ -170,6 +170,6 @@ class Ui_Dialog(object):
         self.album_artist_label.setText(_translate("Dialog", "Album Artist:"))
         self.album_label.setText(_translate("Dialog", "Album:"))
         self.genre_label.setText(_translate("Dialog", "Genre:"))
-        self.offset_label.setText(_translate("Dialog", "Offset (ms)"))
+        self.offset_label.setText(_translate("Dialog", "Offset (s)"))
         self.run.setText(_translate("Dialog", "Run"))
-
+        Dialog.setWindowTitle('Set Split')

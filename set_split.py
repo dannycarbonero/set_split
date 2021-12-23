@@ -5,7 +5,8 @@ from PyQt5 import QtCore, QtGui, QtWidgets
 import layout
 from os import mkdir,remove
 import re
-import pydub
+import subprocess
+import datetime
 
 from selenium import webdriver
 from selenium.webdriver.common.by import By
@@ -50,9 +51,6 @@ class set_split_backend(QtWidgets.QMainWindow,layout.Ui_Dialog):
     def split_set(self):
 
         set_path = self.path_string
-
-        bitrate = pydub.utils.mediainfo(set_path)['bit_rate']
-
         output_path = self.parent_path
 
         album_artist = self.album_artist_input.toPlainText()
@@ -72,7 +70,7 @@ class set_split_backend(QtWidgets.QMainWindow,layout.Ui_Dialog):
         genre = self.genre_input.toPlainText()
 
         self.main_thread = QtCore.QThread()
-        self.worker = Main(set_path, bitrate, output_path, album_artist, album, timings, titles, artists, genre)
+        self.worker = Main(set_path, output_path, album_artist, album, timings, titles, artists, genre)
         self.worker.moveToThread(self.main_thread)
         self.main_thread.started.connect(self.worker.run)
         self.worker.update.connect(self.update_output)
@@ -131,9 +129,7 @@ class Main(QtCore.QObject):
 
     def run(self):
 
-        self.update.emit('Loading Audio...')
-        set = pydub.AudioSegment.from_mp3(self.set_path)
-        self.update.emit('Successfully Loaded Audio')
+        self.update.emit('Splitting Set...')
 
         self.output_path = self.output_path + self.album + '/'
         mkdir(self.output_path)
@@ -141,17 +137,26 @@ class Main(QtCore.QObject):
         for i in range(len(self.timings)):
 
             if i == len(self.timings) - 1:
-                split_song = set[self.timings[i]:]
+                subprocess.call(
+                    ['ffmpeg', '-y', '-ss', self.timings[i], '-i', self.set_path,
+                     '-metadata', 'title=' + self.titles[i], '-metadata', 'album_artist=' + self.album_artist,
+                     '-metadata', 'album=' + self.album, '-metadata', 'artist='+self.artists[i], '-metadata',
+                     'track=' + str(i + 1), '-metadata', 'genre=' + self.genre,'-c', 'copy',
+                     self.output_path + str(i + 1) + ' - ' + self.titles[i] + '.mp3'])
+
             else:
-                split_song = set[self.timings[i]:self.timings[i + 1]]
+
+                subprocess.call(['ffmpeg', '-y', '-ss', self.timings[i], '-to', self.timings[i+1], '-i', self.set_path,
+                                '-metadata', 'title='+self.titles[i], '-metadata', 'album_artist='+self.album_artist,
+                                 '-metadata', 'album='+self.album, '-metadata', 'artist='+self.artists[i],
+                                 '-metadata', 'track='+str(i+1), '-metadata', 'genre='+self.genre, '-c', 'copy',
+                                 self.output_path + str(i + 1) + ' - ' + self.titles[i] + '.mp3'])
+
 
             update_string = ('Now exporting song ' + str(i + 1) + ' of ' + str(len(self.timings)) + ' in the set.')
 
             self.update.emit(update_string)
 
-            split_song.export(self.output_path + str(i + 1) + ' - ' + self.titles[i] + '.mp3', bitrate=self.bitrate,
-                              tags={'title': self.titles[i], 'artist': self.artists[i], 'album': self.album,
-                                    'album artist': self.album_artist, 'track': i + 1, 'genre': self.genre})
 
         self.update.emit('Finished Splitting Set')
         self.terminate_signal.emit(1)
@@ -248,19 +253,17 @@ def format_tracklist(directory, offset): # function to format tracklist for tags
     titles.append(title_string)
     artists.append(artist_string)
 
+    timings = offset_timings(timings, offset)
+
     # first entries are empty, remove them
     del titles[0]
     del artists[0]
-
-    timings = format_timings(timings)
-    timings = [timing + offset for timing in timings]
-    timings[0] = 0
 
     return timings, titles, artists
 
 
 
-def format_timings(timings):
+def offset_timings(timings, offset):
 
     seconds_timings = []
     for i in range(len(timings)):
@@ -275,9 +278,16 @@ def format_timings(timings):
         else:
             print('ERROR')
 
-    miliseconds = [seconds * 10**3 for seconds in seconds_timings]
 
-    return miliseconds
+    seconds_offset_timings = [timing + offset for timing in seconds_timings]
+    timings_offset = []
+
+    for timing in seconds_offset_timings:
+        timings_offset.append(datetime.timedelta(seconds = timing))
+
+    timings_offset[0] = ['0:00']
+
+    return timings_offset
 
 
 
@@ -296,7 +306,7 @@ def remove_track_label(string):
     if string.find('Mashup)') != -1:
         string = remove_edge_spaces(string[string.find(' - ') + 2:string.find('Mashup)') + 7])
     else:
-        title_string = remove_edge_spaces(string[string.find(' - ') + 2:string.find('[')])
+        string = remove_edge_spaces(string[string.find(' - ') + 2:string.find('[')])
 
     return string
 

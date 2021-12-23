@@ -4,7 +4,6 @@ channels:
 dependencies:
   - pip
   - pip:
-    - pydub
     - pyqt5
     - selenium
     - youtube-dl
