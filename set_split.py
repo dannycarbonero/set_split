@@ -27,12 +27,15 @@ class set_split_backend(QtWidgets.QMainWindow,layout.Ui_Dialog):
 
     def set_directories(self):
 
-        self.path_string, _ = QtWidgets.QFileDialog.getOpenFileName()
-        self.parent_path = self.path_string[0:self.path_string.rfind('/')+1]
-        file_string = self.path_string[[m.start() for m in re.finditer('/', self.path_string)][-1]+1:]
-        self.file_path.setText(file_string)
-        self.output_dir.setText(self.parent_path)
+        try:
+            self.path_string, _ = QtWidgets.QFileDialog.getOpenFileName()
+            self.parent_path = self.path_string[0:self.path_string.rfind('/')+1]
+            file_string = self.path_string[[m.start() for m in re.finditer('/', self.path_string)][-1]+1:]
+            self.file_path.setText(file_string)
+            self.output_dir.setText(self.parent_path)
 
+        except:
+            pass
 
 
     def get_tracklist(self):
@@ -112,11 +115,10 @@ class Main(QtCore.QObject):
 
 
 
-    def __init__(self, set_path, bitrate, output_path, album_artist, album, timings, titles, artists, genre, parent=None):
+    def __init__(self, set_path, output_path, album_artist, album, timings, titles, artists, genre, parent=None):
 
         super(Main,self).__init__()
         self.set_path = set_path
-        self.bitrate = bitrate
         self.output_path = output_path
         self.album_artist = album_artist
         self.album = album
@@ -231,22 +233,20 @@ def format_tracklist(directory, offset): # function to format tracklist for tags
 
                 # append previously formatted tag before writing new one, used to have full string, if multiple songs or artists are in same line
                 titles.append(title_string)
+                artists.append(artist_string)
 
                 title_string = remove_track_label(line)
-                artists.append(artist_string)
                 artist_string = remove_edge_spaces(line[0:line.rfind(' - ')])
 
             else:
                 line = line[line.find(']') + 1:] # remove faulty timestamp before first closing bracket
-                line = remove_track_label(line)
-                title_string = title_string + ' & ' + remove_edge_spaces(str(line[line.find(' - ') + 2:]))
+                title_string = title_string + ' & ' + remove_track_label(line)
                 artist_string = artist_string + '; ' + remove_edge_spaces(str(line[0:line.find(' - ')]))
 
-        elif "on stage" not in str.lower(line): # add filter for pasted lines that only have artists as "on stage"
+        elif "on stage" not in str.lower(line) and "set" not in str.lower(line): # add filter for pasted lines that only have artists as "on stage" and different "sets" in a singular set
 
-            line = remove_track_label(line)
-            title_string = title_string + ' & ' + remove_edge_spaces(str(line[line.find(' - ') + 2:]))
-            artist_string = artist_string + '; ' + remove_edge_spaces(str(line[0:line.find(' - ')]))
+            title_string = title_string + ' & ' + remove_track_label(line)
+            artist_string = artist_string + '; ' + remove_edge_spaces(str(line[3:line.find(' - ')]))
 
 
 
@@ -285,7 +285,9 @@ def offset_timings(timings, offset):
     for timing in seconds_offset_timings:
         timings_offset.append(datetime.timedelta(seconds = timing))
 
-    timings_offset[0] = ['0:00']
+    timings_offset[0] = '0:00'
+
+    timings_offset = [str(timing) for timing in timings_offset]
 
     return timings_offset
 

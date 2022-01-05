@@ -52,6 +52,12 @@ v03:
         - offsetting will be converted to seconds, changed to reflect as such in interface
         - added window title
 
+v03.1:
+    set_split.py:
+        - argument numbers across functions fixed to be consistent with new file handling
+        - filtering exception added for lines found in tracklists with "set"
+        - debug tracklist handling issues
+
 TODO:
     - REGEX for tracklist handling
     - modernize front end
