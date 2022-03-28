@@ -6,4 +6,4 @@ dependencies:
   - pip:
     - pyqt5
     - selenium
-    - youtube-dl
+    - yt-dlp

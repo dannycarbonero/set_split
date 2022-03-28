@@ -58,6 +58,28 @@ v03.1:
         - filtering exception added for lines found in tracklists with "set"
         - debug tracklist handling issues
 
+
+v03.1.1:
+    musiC.atalogue.yml:
+        - update dependencies to allow environment to be compatible with zspotify
+
+v04 (in progress):
+    complete overhaul, turning set_split into command line interface
+    - GUI is now deprecated and added to directory /deprecated_gUI
+
+    musiC.a.yml:
+        - yml file renamed and dependencies updated
+
+    media_editing.py:
+        - functions for downloading and splitting set according to arguments given
+
+    trasklist_editing.py:
+        - functions for pulling tracklist from 1001tracklists and splitting them into tags for splitting
+
+    set_split.py:
+        - command line wrapper for set_split
+
+
 TODO:
     - REGEX for tracklist handling
-    - modernize front end
+    - Add documentation to README
