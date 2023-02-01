@@ -74,10 +74,16 @@ v04 (in progress):
         - functions for downloading and splitting set according to arguments given
 
     trasklist_editing.py:
-        - functions for pulling tracklist from 1001tracklists and splitting them into tags for splitting
+        - functions for pulling tracklist from 1001 tracklists and splitting them into tags for splitting
 
     set_split.py:
         - command line wrapper for set_split
+
+    test_fingerprint.py
+        - BEGINNING OF/TESTING OF FINGERPRINT RECOGNITION.
+
+    README.txt
+        - specify FFMPEG and fpcalc requirements
 
 
 TODO:

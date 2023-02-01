@@ -7,3 +7,4 @@ dependencies:
     - pyqt5
     - selenium
     - yt-dlp
+    - pyacoustid
